@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Decryptor - AES ile sifrelenmis video ve resim dosyalarini cozer.
-Kullanim: python decrypt.py [dizin_yolu]
-Varsayilan dizin: scriptin bulundugu klasor
+Decryptor - AES ilə şifrələnmiş video və şəkil fayllarını açır.
+İstifadə: python decrypt.py [qovluq_yolu]
+Default qovluq: skriptin yerləşdiyi qovluq
 """
 
 import os
@@ -17,7 +17,7 @@ except ImportError:
         from Cryptodome.Cipher import AES
         from Cryptodome.Util.Padding import unpad
     except ImportError:
-        print("Gerekli kutuphane eksik. Kurmak icin:")
+        print("Lazımi kitabxana çatışmır. Quraşdırmaq üçün:")
         print("  pip install pycryptodome")
         sys.exit(1)
 
@@ -32,13 +32,13 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif", ".
 
 
 def derive_key(password: str, salt: bytes, iterations: int) -> bytes:
-    """PBKDF2 ile sifreleme anahtari turetir (.NET Rfc2898DeriveBytes uyumlu)."""
+    """PBKDF2 ilə şifrələmə açarı yaradır (.NET Rfc2898DeriveBytes uyğunluqlu)."""
     key = hashlib.pbkdf2_hmac("sha1", password.encode("utf-8"), salt, iterations, dklen=KEY_LENGTH)
     return key
 
 
 def decrypt_file(encrypted_path: str, output_path: str, key: bytes) -> bool:
-    """Tek bir .enc dosyasini cozer."""
+    """Tək bir .enc faylını açır."""
     try:
         with open(encrypted_path, "rb") as f:
             iv = f.read(16)
@@ -52,24 +52,24 @@ def decrypt_file(encrypted_path: str, output_path: str, key: bytes) -> bool:
 
         return True
     except Exception as e:
-        print(f"  HATA: {e}")
+        print(f"  XƏTA: {e}")
         return False
 
 
 def get_file_type(filename: str) -> str:
-    """Dosya uzantisina gore video mu resim mi belirler."""
-    name_without_enc = filename[:-4]  # .enc kaldir
+    """Fayl uzantısına görə video, yoxsa şəkil olduğunu müəyyən edir."""
+    name_without_enc = filename[:-4]  # .enc hissəsini sil
     _, ext = os.path.splitext(name_without_enc)
     ext = ext.lower()
     if ext in VIDEO_EXTENSIONS:
         return "video"
     elif ext in IMAGE_EXTENSIONS:
-        return "resim"
-    return "diger"
+        return "şəkil"
+    return "digər"
 
 
 def find_enc_files_recursive(target_dir: str) -> list:
-    """Tum alt klasorlerde .enc dosyalarini bulur."""
+    """Bütün alt qovluqlarda .enc fayllarını tapır."""
     enc_files = []
     for root, dirs, files in os.walk(target_dir):
         for f in files:
@@ -79,80 +79,80 @@ def find_enc_files_recursive(target_dir: str) -> list:
 
 
 def main():
-    # Dizin belirleme
+    # Qovluğun təyin edilməsi
     if len(sys.argv) > 1:
         target_dir = sys.argv[1]
     else:
         target_dir = os.path.dirname(os.path.abspath(__file__))
 
     if not os.path.isdir(target_dir):
-        print(f"Dizin bulunamadi: {target_dir}")
+        print(f"Qovluq tapılmadı: {target_dir}")
         sys.exit(1)
 
-    # Tum .enc dosyalarini bul (alt klasorler dahil)
+    # Bütün .enc fayllarını tap (alt qovluqlar daxil)
     all_enc_files = find_enc_files_recursive(target_dir)
 
     if not all_enc_files:
-        print(f"Sifreli dosya bulunamadi: {target_dir}")
-        print("(.enc uzantili dosya yok)")
+        print(f"Şifrəli fayl tapılmadı: {target_dir}")
+        print("(.enc uzantılı fayl yoxdur)")
         sys.exit(0)
 
-    # Dosyalari kategorize et
+    # Faylları kateqoriyalara ayır
     video_files = [f for f in all_enc_files if get_file_type(os.path.basename(f)) == "video"]
-    image_files = [f for f in all_enc_files if get_file_type(os.path.basename(f)) == "resim"]
-    other_files = [f for f in all_enc_files if get_file_type(os.path.basename(f)) == "diger"]
+    image_files = [f for f in all_enc_files if get_file_type(os.path.basename(f)) == "şəkil"]
+    other_files = [f for f in all_enc_files if get_file_type(os.path.basename(f)) == "digər"]
 
-    print(f"Bulunan sifreli dosyalar:")
+    print(f"Tapılan şifrəli fayllar:")
     print(f"  Video : {len(video_files)}")
-    print(f"  Resim : {len(image_files)}")
+    print(f"  Şəkil : {len(image_files)}")
     if other_files:
-        print(f"  Diger : {len(other_files)}")
+        print(f"  Digər : {len(other_files)}")
     print()
 
-    # Kullaniciya sor
-    print("Ne yapmak istiyorsunuz?")
-    print("  1 - Videolari coz")
-    print("  2 - Resimleri coz")
-    print("  3 - Hepsini coz")
-    print("  0 - Cikis")
+    # İstifadəçidən soruş
+    print("Nə etmək istəyirsiniz?")
+    print("  1 - Videoları aç")
+    print("  2 - Şəkilləri aç")
+    print("  3 - Hamısını aç")
+    print("  0 - Çıxış")
     print()
 
-    choice = input("Seciminiz (0/1/2/3): ").strip()
+    choice = input("Seçiminiz (0/1/2/3): ").strip()
 
     if choice == "0":
-        print("Cikis yapiliyor.")
+        print("Çıxış edilir.")
         sys.exit(0)
     elif choice == "1":
         files_to_decrypt = video_files
         label = "video"
     elif choice == "2":
         files_to_decrypt = image_files
-        label = "resim"
+        label = "şəkil"
     elif choice == "3":
         files_to_decrypt = all_enc_files
-        label = "tum"
+        label = "bütün"
     else:
-        print("Gecersiz secim!")
+        print("Yanlış seçim!")
         sys.exit(1)
 
     if not files_to_decrypt:
-        print(f"Cozulecek {label} dosya bulunamadi.")
+        print(f"Açılacaq {label} fayl tapılmadı.")
         sys.exit(0)
 
-    print(f"\n{len(files_to_decrypt)} {label} dosya cozulecek...\n")
+    print(f"\n{len(files_to_decrypt)} {label} fayl açılacaq...\n")
 
-    # Anahtar turet
+    # Açar yarat
     key = derive_key(PASSWORD, SALT, ITERATIONS)
 
     success = 0
     fail = 0
 
     for i, enc_path in enumerate(files_to_decrypt, 1):
-        original_path = enc_path[:-4]  # ".enc" kaldir
+        original_path = enc_path[:-4]  # ".enc" hissəsini sil
         original_name = os.path.basename(original_path)
 
         if i % 10 == 0 or i <= 3 or i == len(files_to_decrypt):
-            print(f"[{i}/{len(files_to_decrypt)}] Cozuluyor: {original_name}")
+            print(f"[{i}/{len(files_to_decrypt)}] Açılır: {original_name}")
 
         if decrypt_file(enc_path, original_path, key):
             os.remove(enc_path)
@@ -160,7 +160,7 @@ def main():
         else:
             fail += 1
 
-    print(f"\nSonuc: {success} basarili, {fail} basarisiz")
+    print(f"\nNəticə: {success} uğurlu, {fail} uğursuz")
 
 
 if __name__ == "__main__":
