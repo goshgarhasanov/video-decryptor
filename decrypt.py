@@ -164,4 +164,11 @@ def main():
 
 
 if __name__ == "__main__":
+    
+    print("
+" + "─" * 56)
+    print("  Developed by Goshgar Hasanzadeh")
+    print("  https://github.com/goshgarhasanov")
+    print("─" * 56 + "
+")
     main()
